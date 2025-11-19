@@ -93,7 +93,7 @@ public abstract class PositionalAwareCaptureStep : PacketHandlerAdapter, ICalibr
             return;
 
         var images = frame.image.Split();
-        _positionalBinCollector.AddFrame(images[0], images[1]);
+        _positionalBinCollector.AddFrame(images[1], images[0]);
     }
 
     protected void StartCollecting()
@@ -153,7 +153,7 @@ public abstract class BaseCaptureStep : PacketHandlerAdapter, ICalibrationStep
 
     public virtual Frame AddFrame(Mat[] images)
     {
-        return _binCollector.AddFrame(images[0], images[1]);
+        return _binCollector.AddFrame(images[1], images[0]);
     }
 
     protected void StartCollecting()
@@ -215,7 +215,7 @@ public class GazeCaptureStep : BasePositionalAwareEyeCaptureStep
         if (_posDataTimer.Elapsed <= _posDataTimeout)
         {
             var images = frame.image.Split();
-            var f = _positionalBinCollector.AddFrame(images[0], images[1]);
+            var f = _positionalBinCollector.AddFrame(images[1], images[0]);
             if (f is not null)
             {
                 f.Header = f.Header with
