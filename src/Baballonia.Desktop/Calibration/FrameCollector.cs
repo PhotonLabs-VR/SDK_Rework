@@ -53,7 +53,7 @@ public class PositionalBinCollector
         if (posData == null)
             return null;
 
-        const int jpegQuality = 50;
+        const int jpegQuality = 85;
         Cv2.ImEncode(".jpg", left, out var leftBuf, [(int)ImwriteFlags.JpegQuality, jpegQuality]);
         Cv2.ImEncode(".jpg", right, out var rightBuf, [(int)ImwriteFlags.JpegQuality, jpegQuality]);
 
@@ -127,7 +127,7 @@ public class BinCollector
 
     public Frame AddFrame(Mat left, Mat right)
     {
-        const int jpegQuality = 50;
+        const int jpegQuality = 85;
         Cv2.ImEncode(".jpg", left, out var leftBuf, [(int)ImwriteFlags.JpegQuality, jpegQuality]);
         Cv2.ImEncode(".jpg", right, out var rightBuf, [(int)ImwriteFlags.JpegQuality, jpegQuality]);
 
