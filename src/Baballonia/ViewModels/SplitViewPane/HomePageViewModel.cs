@@ -86,9 +86,10 @@ public partial class HomePageViewModel : ViewModelBase, IDisposable
         private void Initialize(string[] cameras)
         {
             var displayAddress = _localSettingsService.ReadSetting<string>("LastOpened" + Name);
-            var camSettings = _localSettingsService.ReadSetting<CameraSettings>(Name);
+            var camSettings = _localSettingsService.ReadSetting<CameraSettings>(Name) ?? CameraSettings;
             ShouldAutostart = _localSettingsService.ReadSetting("ShouldAutostart" + Name, false);
             var preferredCapture = _localSettingsService.ReadSetting<string>("LastOpenedPreferredCapture" + Name);
+            if (preferredCapture == "Default") preferredCapture = Assets.Resources.Home_Backend_Default;
 
             UpdateCameraDropDown(cameras);
             DisplayAddress = displayAddress;
@@ -144,7 +145,8 @@ public partial class HomePageViewModel : ViewModelBase, IDisposable
         {
             var prev = _localSettingsService.ReadSetting<string>("LastOpenedPreferredCapture" + Name);
             if (prev != value)
-                _localSettingsService.SaveSetting("LastOpenedPreferredCapture" + Name, value);
+                _localSettingsService.SaveSetting("LastOpenedPreferredCapture" + Name,
+                    value == Assets.Resources.Home_Backend_Default ? "Default" : value);
         }
 
         partial void OnShouldAutostartChanged(bool value)
@@ -609,7 +611,7 @@ public partial class HomePageViewModel : ViewModelBase, IDisposable
             SetButtons(model, false, false);
             var address = model.DisplayAddress;
             var backend = model.SelectedCaptureMethod;
-            if (!model.CaptureMethodVisible)
+            if (!model.CaptureMethodVisible || backend == Assets.Resources.Home_Backend_Default)
                 backend = "";
 
 
