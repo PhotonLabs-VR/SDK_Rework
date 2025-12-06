@@ -38,7 +38,6 @@ cGmQGUQ2S2mcUlUC5lN2EMkuJybKiMeALJNEk2IqBi/rZIWrCzHTcuuvjSOjyck0
     public DataUploaderService(IIdentityService identityService)
     {
         _identityService = identityService;
-
         var uploaderConfig = new AmazonS3Config
         {
             ServiceURL = GarageEndpoint,
@@ -46,15 +45,12 @@ cGmQGUQ2S2mcUlUC5lN2EMkuJybKiMeALJNEk2IqBi/rZIWrCzHTcuuvjSOjyck0
             SignatureMethod = SigningAlgorithm.HmacSHA256,
             AuthenticationRegion = "garage"
         };
-
         var uploaderCredentials = new BasicAWSCredentials(
             UploaderIdentifierOne,
             UploaderIdentifierTwo
         );
-
         _publicRsa = RSA.Create();
         _publicRsa.ImportFromPem(PublicKey);
-
         _uploaderClient = new AmazonS3Client(uploaderCredentials, uploaderConfig);
     }
 
@@ -64,14 +60,35 @@ cGmQGUQ2S2mcUlUC5lN2EMkuJybKiMeALJNEk2IqBi/rZIWrCzHTcuuvjSOjyck0
         var fileName = Path.GetFileName(pathToFile);
         var uniqueName = $"{_identityService.GetUniqueUserId()}_{fileName}";
 
-        var encryptedData = _publicRsa.Encrypt(dataToUpload, RSAEncryptionPadding.Pkcs1);
+        using var aes = Aes.Create();
+        aes.GenerateKey();
+        aes.GenerateIV();
+
+        byte[] encryptedData;
+        using (var encryptor = aes.CreateEncryptor())
+        using (var ms = new MemoryStream())
+        {
+            await using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+            {
+                await cs.WriteAsync(dataToUpload);
+            }
+            encryptedData = ms.ToArray();
+        }
+
+        var encryptedKey = _publicRsa.Encrypt(aes.Key, RSAEncryptionPadding.OaepSHA256);
+
+        var finalData = new byte[4 + encryptedKey.Length + aes.IV.Length + encryptedData.Length];
+        BitConverter.GetBytes(encryptedKey.Length).CopyTo(finalData, 0);
+        encryptedKey.CopyTo(finalData, 4);
+        aes.IV.CopyTo(finalData, 4 + encryptedKey.Length);
+        encryptedData.CopyTo(finalData, 4 + encryptedKey.Length + aes.IV.Length);
 
         var putRequest = new PutObjectRequest
         {
             BucketName = BucketName,
             Key = uniqueName,
-            ChecksumSHA256 = Convert.ToHexString(SHA256.HashData(encryptedData)),
-            InputStream = new MemoryStream(encryptedData)
+            ChecksumSHA256 = Convert.ToHexString(SHA256.HashData(finalData)),
+            InputStream = new MemoryStream(finalData)
         };
 
         await _uploaderClient.PutObjectAsync(putRequest);
